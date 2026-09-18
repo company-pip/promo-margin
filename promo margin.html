@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>促銷後毛利扣款計算機</title>
+<style>
+  :root {
+    --bg: #fdf1e8;
+    --card-bg: #ffffff;
+    --text: #1a1a1a;
+    --text-soft: #6a655a;
+    --border: #f0cba7;
+    --accent: #e0703a;
+    --accent-soft: #fbe0cf;
+    --navy: #16283a;
+    --navy-text: #f4efe6;
+    --navy-soft: #8fb5c7;
+    --olive: #4a463c;
+    --olive-text: #f0eee6;
+    --olive-soft: #d7d2c4;
+    --warn-bg: #fdecec;
+    --warn-border: #e8a6a6;
+    --warn-text: #9c2b2b;
+    --input-bg: #ffffff;
+    --input-border: #ddd6c8;
+    --row-alt: #f1ede2;
+    --row-line: #e3ded0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #1c1a16;
+      --card-bg: #262320;
+      --text: #f0eee6;
+      --text-soft: #b8b2a2;
+      --border: #4a3a2a;
+      --accent: #e88a5a;
+      --accent-soft: #3a2c22;
+      --navy: #0f1e2c;
+      --navy-text: #f4efe6;
+      --navy-soft: #8fb5c7;
+      --olive: #3a3730;
+      --olive-text: #f0eee6;
+      --olive-soft: #cfc9ba;
+      --warn-bg: #3a2323;
+      --warn-border: #7a3a3a;
+      --warn-text: #f0a0a0;
+      --input-bg: #2f2b25;
+      --input-border: #4a453a;
+      --row-alt: #2b2822;
+      --row-line: #3a362e;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #1c1a16;
+    --card-bg: #262320;
+    --text: #f0eee6;
+    --text-soft: #b8b2a2;
+    --border: #4a3a2a;
+    --accent: #e88a5a;
+    --accent-soft: #3a2c22;
+    --navy: #0f1e2c;
+    --navy-text: #f4efe6;
+    --navy-soft: #8fb5c7;
+    --olive: #3a3730;
+    --olive-text: #f0eee6;
+    --olive-soft: #cfc9ba;
+    --warn-bg: #3a2323;
+    --warn-border: #7a3a3a;
+    --warn-text: #f0a0a0;
+    --input-bg: #2f2b25;
+    --input-border: #4a453a;
+    --row-alt: #2b2822;
+    --row-line: #3a362e;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'PingFang TC', 'Microsoft JhengHei', 'Helvetica Neue', Arial, sans-serif;
+    padding: 32px 16px 64px;
+    min-height: 100vh;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
+  h1 { font-size: 30px; font-weight: 700; margin: 0 0 4px; }
+  .subtitle { font-size: 15px; color: var(--text-soft); margin: 0; }
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+  }
+  .field-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  @media (max-width: 480px) {
+    .field-grid { grid-template-columns: 1fr; }
+  }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field.full { grid-column: 1 / -1; }
+  label { font-size: 14px; font-weight: 600; color: var(--text); }
+  label .hint { font-weight: 400; color: var(--text-soft); font-size: 12px; display: block; margin-top: 2px; }
+  input[type="number"], input[type="text"] {
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 16px;
+    color: var(--text);
+    width: 100%;
+  }
+  input[type="number"]:focus, input[type="text"]:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+  .margin-row { display: flex; align-items: center; gap: 12px; }
+  input[type="range"] { flex: 1; accent-color: var(--accent); }
+  .margin-value { font-size: 20px; font-weight: 700; color: var(--accent); min-width: 64px; text-align: right; }
+  .note {
+    background: var(--accent-soft);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 18px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text);
+  }
+  .note b { color: var(--accent); }
+  .warn {
+    background: var(--warn-bg);
+    border: 1px solid var(--warn-border);
+    border-radius: 12px;
+    padding: 14px 18px;
+    font-size: 14px;
+    color: var(--warn-text);
+    display: none;
+    line-height: 1.6;
+  }
+  .warn.show { display: block; }
+  .results { display: flex; flex-direction: column; gap: 12px; }
+  .result-card {
+    border-radius: 16px;
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .result-card.step1 { background: var(--navy); color: var(--navy-text); }
+  .result-card.step2 { background: var(--accent); color: #fff6ef; }
+  .result-card.step3 { background: var(--olive); color: var(--olive-text); }
+  .result-label { font-size: 13px; opacity: 0.75; }
+  .result-title { font-size: 15px; font-weight: 600; margin: 0; }
+  .result-value { font-size: 30px; font-weight: 700; }
+  .result-formula { font-size: 12px; opacity: 0.7; }
+  .toggle-row { display: flex; justify-content: flex-end; }
+  .theme-btn {
+    background: none;
+    border: 1px solid var(--input-border);
+    color: var(--text-soft);
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 8px; }
+  th { text-align: left; padding: 10px 12px; background: var(--navy); color: var(--navy-text); font-weight: 600; }
+  th:first-child { border-radius: 8px 0 0 0; }
+  th:last-child { border-radius: 0 8px 0 0; }
+  td { padding: 10px 12px; border-bottom: 1px solid var(--row-line); }
+  tr:nth-child(even) td { background: var(--row-alt); }
+  tr.highlight td { background: var(--accent-soft) !important; font-weight: 700; }
+  .section-title { font-size: 16px; font-weight: 700; margin: 0 0 4px; }
+  .empty-state { color: var(--text-soft); font-size: 14px; text-align: center; padding: 24px 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="toggle-row">
+    <button class="theme-btn" id="themeToggle" type="button">🌓 切換深色/淺色</button>
+  </div>
+
+  <div>
+    <h1>促銷後毛利扣款計算機</h1>
+    <p class="subtitle">輸入商品資訊與促銷售價，算出活動總後扣、單入成本與通路負擔比例</p>
+  </div>
+
+  <div class="card">
+    <div class="field-grid">
+      <div class="field">
+        <label>單價（原售價）</label>
+        <input type="number" id="unitPrice" placeholder="150" min="0" step="0.01">
+      </div>
+      <div class="field">
+        <label>進價</label>
+        <input type="number" id="costPrice" placeholder="132" min="0" step="0.01">
+      </div>
+      <div class="field">
+        <label>數量</label>
+        <input type="number" id="qty" placeholder="2" min="1" step="1">
+      </div>
+      <div class="field">
+        <label>促銷售價 <span class="hint">活動總價，如「2件$199」填199</span></label>
+        <input type="number" id="promoPrice" placeholder="199" min="0" step="0.01">
+      </div>
+    </div>
+
+    <div class="field full" style="margin-top:16px;">
+      <label>促銷後要求毛利% <span class="hint" id="marginHint">先填上面欄位，會提示上限與建議值</span></label>
+      <input type="number" id="marginInput" placeholder="6" min="0" step="0.1">
+    </div>
+
+    <div class="note" id="originMarginNote" style="margin-top:16px; display:none;"></div>
+    <div class="warn" id="overLimitWarn"></div>
+  </div>
+
+  <div class="card" id="tableCard" style="display:none;">
+    <p class="section-title">計算總表</p>
+    <p class="subtitle" id="tableSubtitle" style="margin-bottom:8px;"></p>
+    <table>
+      <thead>
+        <tr>
+          <th>通路促銷毛利</th>
+          <th>活動總後扣</th>
+          <th>單入後扣後進價成本</th>
+          <th>通路負擔%</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  const els = {
+    unitPrice: document.getElementById('unitPrice'),
+    costPrice: document.getElementById('costPrice'),
+    qty: document.getElementById('qty'),
+    promoPrice: document.getElementById('promoPrice'),
+    marginInput: document.getElementById('marginInput'),
+    marginHint: document.getElementById('marginHint'),
+    originMarginNote: document.getElementById('originMarginNote'),
+    overLimitWarn: document.getElementById('overLimitWarn'),
+    tableCard: document.getElementById('tableCard'),
+    tableSubtitle: document.getElementById('tableSubtitle'),
+    tableBody: document.getElementById('tableBody'),
+  };
+
+  function fmt(n) {
+    if (!isFinite(n)) return '—';
+    return n.toLocaleString('zh-Hant-TW', { maximumFractionDigits: 2, minimumFractionDigits: 0 });
+  }
+
+  function getInputs() {
+    const unitPrice = parseFloat(els.unitPrice.value);
+    const costPrice = parseFloat(els.costPrice.value);
+    const qty = parseFloat(els.qty.value);
+    const promoPrice = parseFloat(els.promoPrice.value);
+    const marginPct = parseFloat(els.marginInput.value);
+    return { unitPrice, costPrice, qty, promoPrice, marginPct };
+  }
+
+  function calcRow(unitPrice, costPrice, qty, promoPrice, marginPct) {
+    const marginFrac = marginPct / 100;
+    const step1 = costPrice * qty - promoPrice * (1 - marginFrac);
+    const step2 = costPrice - (step1 / qty);
+    const denom = (unitPrice * qty - promoPrice);
+    const step3 = denom !== 0 ? 1 - (step1 / denom) : null;
+    return { step1, step2, step3 };
+  }
+
+  function update() {
+    const { unitPrice, costPrice, qty, promoPrice, marginPct } = getInputs();
+
+    const validBase = [unitPrice, costPrice, qty].every(v => isFinite(v) && v > 0) && costPrice <= unitPrice;
+
+    if (!validBase) {
+      els.originMarginNote.style.display = 'none';
+      els.overLimitWarn.classList.remove('show');
+      els.tableCard.style.display = 'none';
+      return;
+    }
+
+    const originMarginPct = ((unitPrice - costPrice) / unitPrice) * 100;
+    const suggestPct = originMarginPct / 2;
+
+    els.marginHint.textContent = `原毛利為上限 ${fmt(originMarginPct)}%，建議提報 ${fmt(suggestPct)}%`;
+
+    els.originMarginNote.style.display = 'block';
+    els.originMarginNote.innerHTML =
+      `原毛利 = (單價 − 進價) ÷ 單價 = <b>${fmt(originMarginPct)}%</b>（本商品促銷後毛利上限）。` +
+      `建議先向通路提報原毛利的 50%，約 <b>${fmt(suggestPct)}%</b>。`;
+
+    const hasMargin = isFinite(marginPct) && marginPct >= 0;
+    if (hasMargin && marginPct > originMarginPct) {
+      els.overLimitWarn.classList.add('show');
+      els.overLimitWarn.textContent = `目前輸入的要求毛利（${fmt(marginPct)}%）已超過原毛利上限（${fmt(originMarginPct)}%），一般不建議提報超過原毛利。`;
+    } else {
+      els.overLimitWarn.classList.remove('show');
+    }
+
+    const hasPromo = isFinite(promoPrice) && promoPrice > 0;
+    if (!hasPromo || !hasMargin) {
+      els.tableCard.style.display = 'none';
+      return;
+    }
+
+    // 總表：以輸入的毛利%為主，另外加上原毛利上限內的整數% 供對照，最多 12 列
+    const entered = Math.round(marginPct * 10) / 10; // 保留一位小數避免浮點誤差
+    let points = new Set([entered]);
+    let m = 6;
+    while (m <= originMarginPct && points.size < 12) {
+      points.add(m);
+      m++;
+    }
+    if (points.size < 12 && !points.has(Math.round(originMarginPct))) {
+      points.add(Math.round(originMarginPct * 10) / 10);
+    }
+    const rows = Array.from(points).sort((a, b) => a - b).slice(0, 12);
+
+    els.tableCard.style.display = 'block';
+    els.tableSubtitle.textContent = `促銷售價${fmt(promoPrice)}元、單價${fmt(unitPrice)}元、進價${fmt(costPrice)}元、數量${fmt(qty)}件`;
+    els.tableBody.innerHTML = rows.map(m => {
+      const r = calcRow(unitPrice, costPrice, qty, promoPrice, m);
+      const isCurrent = Math.abs(m - entered) < 0.01;
+      return `<tr class="${isCurrent ? 'highlight' : ''}">
+        <td>${fmt(m)}%</td>
+        <td>${fmt(r.step1)} 元</td>
+        <td>${fmt(r.step2)} 元</td>
+        <td>${r.step3 === null ? '—' : fmt(r.step3 * 100) + '%'}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  [els.unitPrice, els.costPrice, els.qty, els.promoPrice, els.marginInput].forEach(el => {
+    el.addEventListener('input', update);
+  });
+
+  const themeBtn = document.getElementById('themeToggle');
+  themeBtn.addEventListener('click', () => {
+    const current = document.documentElement.getAttribute('data-theme');
+    document.documentElement.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark');
+  });
+
+  update();
+</script>
+</body>
+</html>
